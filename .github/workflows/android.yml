@@ -27,14 +27,21 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential ccache git zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev tk-dev libgdbm-compat-dev liblzma-dev lzma-dev uuid-dev tar libbz2-dev
-        sudo apt-get install -y zip unzip autoconf automake libtool pkg-config patch cmake ninja-build python3-dev
-        sudo apt-get install -y sqlite3 libsqlite3-dev
+        sudo apt-get install -y zip unzip autoconf automake libtool pkg-config patch cmake ninja-build python3-dev sqlite3 libsqlite3-dev
 
     - name: Install Python Tools
       run: |
         python -m pip install --upgrade pip setuptools virtualenv
-        pip install "cython<3.0"
-        pip install buildozer
+        pip install cython buildozer
+
+    - name: Auto-Generate and Configure Buildozer Spec
+      run: |
+        buildozer init
+        # تعديل السيرفر تلقائياً لإضافة مكتبة requests وصلاحية الإنترنت
+        sed -i 's/requirements = python3, kivy/requirements = python3, kivy, requests/g' buildozer.spec
+        sed -i 's/#android.permissions = .*/android.permissions = INTERNET/g' buildozer.spec
+        sed -i 's/package.name = myapp/package.name = vodafonecash/g' buildozer.spec
+        sed -i 's/title = My Application/title = Vodafone Cash App/g' buildozer.spec
 
     - name: Build APK with Buildozer
       run: |
