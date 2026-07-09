@@ -8,6 +8,15 @@ from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.spinner import Spinner
+from kivy.core.text import LabelBase
+from kivy.core.window import Window
+
+LabelBase.register(
+    name="Arabic",
+    fn_regular="Cairo.ttf"
+)
+
+Window.clearcolor = (0.08, 0.08, 0.10, 1)
 
 # قوائم المنتجات الخاصة بك بدون أي تعديل
 FAKKA_PRODUCTS = [
@@ -56,24 +65,32 @@ class VodafoneCashApp(App):
         # 1. القائمة المنسدلة لاختيار نوع الكارت
         self.main_layout.add_widget(
             Label(
-                text="اختر نوع الكارت المعين:",
-                font_size=16,
+    text="اختر نوع الكارت المعين:",
+    font_name="Arabic",
+color=(1,1,1,1),
+font_size=16,
                 size_hint_y=None,
                 height=30,
             )
         )
         self.card_spinner = Spinner(
             text="اضغط هنا لاختيار الكارت",
+            font_name="Arabic",
             values=PRODUCT_NAMES,
             size_hint_y=None,
             height=50,
             font_size=16,
         )
         self.main_layout.add_widget(self.card_spinner)
+        self.card_spinner.option_cls.font_name = "Arabic"
 
         # 2. خانة إدخال رقم المستلم
         self.receiver_input = TextInput(
             hint_text="📱 ادخل الرقم اللي عايز تشحن له (11 رقم)",
+            foreground_color=(1,1,1,1),
+background_color=(0.13,0.13,0.13,1),
+cursor_color=(0.89,0.04,0.16,1),
+            font_name="Arabic",
             multiline=False,
             size_hint_y=None,
             height=50,
@@ -85,6 +102,10 @@ class VodafoneCashApp(App):
         # 3. خانة إدخال الرقم السري للمحفظة
         self.pin_input = TextInput(
             hint_text="🔒 ادخل الرقم السري للمحفظة",
+            foreground_color=(1,1,1,1),
+background_color=(0.13,0.13,0.13,1),
+cursor_color=(0.89,0.04,0.16,1),
+            font_name="Arabic",
             multiline=False,
             password=True,  # يخفي الباسورد على شكل نجوم للأمان
             size_hint_y=None,
@@ -97,9 +118,10 @@ class VodafoneCashApp(App):
         # 4. زر تشغيل العملية
         self.btn_submit = Button(
             text="🚀 بدء عملية الشحن التلقائي",
+            font_name="Arabic",
             size_hint_y=None,
             height=55,
-            background_color=(0, 0.6, 0.2, 1),
+            background_color=(0.89, 0.04, 0.16, 1)
             font_size=18,
         )
         self.btn_submit.bind(on_press=self.start_thread)
@@ -109,6 +131,9 @@ class VodafoneCashApp(App):
         scroll = ScrollView()
         self.log_label = Label(
             text="حالة العمليات ستظهر هنا خطوة بخطوة...\n",
+            font_name="Arabic",
+            color=(1,1,1,1),
+            markup=True,
             size_hint_y=None,
             halign="center",
             valign="top",
@@ -121,8 +146,9 @@ class VodafoneCashApp(App):
         return self.main_layout
 
     def write_log(self, text):
-        # دالة مخصصة تقوم بدور الـ print وتضيف النص في واجهة التطبيق
-        self.log_label.text += f"{text}\n"
+    # تحديث النص في واجهة التطبيق
+    self.log_label.markup = True
+    self.log_label.text += f"[font=Arabic]{text}[/font]\n"
 
     def start_thread(self, instance):
         # تشغيل الكود في الخلفية لكي لا يتوقف التطبيق عن الاستجابة أثناء طلبات الويب
