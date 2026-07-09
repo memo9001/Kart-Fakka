@@ -23,16 +23,18 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install System Dependencies
+    - name: Install All System Dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential ccache git zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev tk-dev libgdbm-compat-dev liblzma-dev lzma-dev uuid-dev tar libbz2-dev
-        sudo apt-get install -y zip unzip autoconf automake libtool pkg-config patch cmake lld
+        sudo apt-get install -y zip unzip autoconf automake libtool pkg-config patch cmake ninja-build python3-dev
+        sudo apt-get install -y sqlite3 libsqlite3-dev
 
-    - name: Install Python Pip and Correct Cython Version
+    - name: Install Python Tools
       run: |
-        python -m pip install --upgrade pip
-        pip install "cython<3.0" buildozer
+        python -m pip install --upgrade pip setuptools virtualenv
+        pip install "cython<3.0"
+        pip install buildozer
 
     - name: Build APK with Buildozer
       run: |
