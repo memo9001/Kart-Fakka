@@ -1,6 +1,15 @@
-import requests
 import json
+import requests
+import threading
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.textinput import TextInput
+from kivy.uix.button import Button
+from kivy.uix.label import Label
+from kivy.uix.scrollview import ScrollView
+from kivy.uix.spinner import Spinner
 
+# قوائم المنتجات الخاصة بك بدون أي تعديل
 FAKKA_PRODUCTS = [
     ("فكة  2.5  جنيه", "Fakka_2.5_Unite"),
     ("فكة  4.25 جنيه", "Fakka_4.25_Unite"),
@@ -33,167 +42,266 @@ MARED_PRODUCTS = [
 ]
 
 ALL_PRODUCTS = FAKKA_PRODUCTS + MARED_PRODUCTS
+PRODUCT_NAMES = [item[0] for item in ALL_PRODUCTS]
 
-print("\n📋 اختر الكرت:\n")
-for i, (name, _) in enumerate(ALL_PRODUCTS, 1):
-    print(f"[{i}] {name}")
 
-while True:
-    try:
-        choice = int(input("\nاختار رقم الكرت: "))
-        if 1 <= choice <= len(ALL_PRODUCTS):
-            product_name, product_id = ALL_PRODUCTS[choice - 1]
-            break
-        else:
-            print("اختيار غير صحيح")
-    except:
-        print("ادخل رقم صحيح")
+class VodafoneCashApp(App):
 
-receiver = input("\n📱 ادخل الرقم اللي عايز تشحن له: ").strip()
+    def build(self):
+        # واجهة التطبيق - ترتيب عمودي وبادئ مريح للعين
+        self.main_layout = BoxLayout(
+            orientation='vertical', padding=15, spacing=12
+        )
 
-if not (receiver.startswith("01") and len(receiver) == 11):
-    print("رقم غير صحيح")
-    exit()
+        # 1. القائمة المنسدلة لاختيار نوع الكارت
+        self.main_layout.add_widget(
+            Label(
+                text="اختر نوع الكارت المعين:",
+                font_size=16,
+                size_hint_y=None,
+                height=30,
+            )
+        )
+        self.card_spinner = Spinner(
+            text="اضغط هنا لاختيار الكارت",
+            values=PRODUCT_NAMES,
+            size_hint_y=None,
+            height=50,
+            font_size=16,
+        )
+        self.main_layout.add_widget(self.card_spinner)
 
-pin = input("🔒 ادخل الرقم السري للمحفظة: ").strip()
+        # 2. خانة إدخال رقم المستلم
+        self.receiver_input = TextInput(
+            hint_text="📱 ادخل الرقم اللي عايز تشحن له (11 رقم)",
+            multiline=False,
+            size_hint_y=None,
+            height=50,
+            font_size=16,
+            input_filter="int",
+        )
+        self.main_layout.add_widget(self.receiver_input)
 
-# الحصول على seamless token و msisdn
-url_seamless = "http://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth?client_id=ana-vodafone-app-seamless"
+        # 3. خانة إدخال الرقم السري للمحفظة
+        self.pin_input = TextInput(
+            hint_text="🔒 ادخل الرقم السري للمحفظة",
+            multiline=False,
+            password=True,  # يخفي الباسورد على شكل نجوم للأمان
+            size_hint_y=None,
+            height=50,
+            font_size=16,
+            input_filter="int",
+        )
+        self.main_layout.add_widget(self.pin_input)
 
-headers_seamless = {
-    'User-Agent': "okhttp/4.11.0",
-    'Connection': "Keep-Alive",
-    'Accept-Encoding': "gzip",
-    'x-dynatrace': "MT_3_5_2386790616_1-0_a556db1b-4506-43f3-854a-1d2527767923_0_21317_157",
-    'x-agent-operatingsystem': "13",
-    'clientId': "AnaVodafoneAndroid",
-    'Accept-Language': "ar",
-    'x-agent-device': "OPPO CPH2235",
-    'x-agent-version': "2024.7.2.1",
-    'x-agent-build': "1050",
-    'digitalId': "24S0M31T0I9RK"
-}
+        # 4. زر تشغيل العملية
+        self.btn_submit = Button(
+            text="🚀 بدء عملية الشحن التلقائي",
+            size_hint_y=None,
+            height=55,
+            background_color=(0, 0.6, 0.2, 1),
+            font_size=18,
+        )
+        self.btn_submit.bind(on_press=self.start_thread)
+        self.main_layout.add_widget(self.btn_submit)
 
-response_seamless = requests.get(url_seamless, headers=headers_seamless)
-seamless_data = response_seamless.json()
-seamless_token = seamless_data.get('seamlessToken')
-sender_msisdn = seamless_data.get('msisdn')
+        # 5. شاشة السجل وعرض تفاصيل الـ print السابقة
+        scroll = ScrollView()
+        self.log_label = Label(
+            text="حالة العمليات ستظهر هنا خطوة بخطوة...\n",
+            size_hint_y=None,
+            halign="center",
+            valign="top",
+            font_size=15,
+        )
+        self.log_label.bind(texture_size=self.log_label.setter('size'))
+        scroll.add_widget(self.log_label)
+        self.main_layout.add_widget(scroll)
 
-if seamless_token:
-    print('✅ تم تسجيل الدخول بنجاح إلى الكاش')
+        return self.main_layout
 
-# الحصول على access token
-url_token = "https://mobile.vodafone.com.eg/auth/realms/vf-realm/protocol/openid-connect/token"
+    def write_log(self, text):
+        # دالة مخصصة تقوم بدور الـ print وتضيف النص في واجهة التطبيق
+        self.log_label.text += f"{text}\n"
 
-payload_token = {
-    'grant_type': "password",
-    'client_secret': "b86e30a8-ae29-467a-a71f-65c73f2ff5e3",
-    'client_id': "cash-app"
-}
+    def start_thread(self, instance):
+        # تشغيل الكود في الخلفية لكي لا يتوقف التطبيق عن الاستجابة أثناء طلبات الويب
+        threading.Thread(target=self.process_billing).start()
 
-headers_token = {
-    'User-Agent': "okhttp/4.11.0",
-    'Accept': "application/json, text/plain, */*",
-    'Accept-Encoding': "gzip",
-    'silentLogin': "true",
-    'seamlessToken': seamless_token,
-    'firstTimeLogin': "true",
-    'x-dynatrace': "MT_3_5_2386790616_1-0_a556db1b-4506-43f3-854a-1d2527767923_0_21520_165",
-    'x-agent-operatingsystem': "13",
-    'clientId': "AnaVodafoneAndroid",
-    'Accept-Language': "ar",
-    'x-agent-device': "OPPO CPH2235",
-    'x-agent-version': "2024.7.2.1",
-    'x-agent-build': "1050",
-    'digitalId': "24S0M31T0I9RK"
-}
+    def process_billing(self):
+        # تفريغ الشاشة القديمة أولاً
+        self.log_label.text = "⏳ جاري بدء العملية...\n"
 
-response_token = requests.post(url_token, data=payload_token, headers=headers_token)
-access_token = response_token.json()['access_token']
+        # أخذ المدخلات من الواجهة
+        selected_card = self.card_spinner.text
+        receiver = self.receiver_input.text.strip()
+        pin = self.pin_input.text.strip()
 
-# تنفيذ طلب الشحن
-url_order = "https://mobile.vodafone.com.eg/services/dxl/pom/productOrder"
+        # التحقق من صحة الاختيارات
+        if selected_card == "اضغط هنا لاختيار الكارت":
+            self.write_log("❌ خطأ: يرجى اختيار نوع الكارت أولاً!")
+            return
 
-payload_order = {
-    "channel": {
-        "name": "MobileApp"
-    },
-    "orderItem": [
-        {
-            "action": "insert",
-            "id": product_id,
-            "product": {
-                "characteristic": [
+        if not (receiver.startswith("01") and len(receiver) == 11):
+            self.write_log("❌ خطأ: رقم الهاتف غير صحيح (يجب أن يبدأ بـ 01 ومكون من 11 رقم).")
+            return
+
+        if not pin:
+            self.write_log("❌ خطأ: يرجى كتابة الرقم السري للمحفظة.")
+            return
+
+        # معرفة الـ product_id بناءً على الاسم المختار
+        product_id = None
+        for name, p_id in ALL_PRODUCTS:
+            if name == selected_card:
+                product_id = p_id
+                break
+
+        # -------------------------------------------------------------
+        # كود الـ Requests الفعلي الخاص بك بدون أي تعديل في المنطق والبيانات
+        # -------------------------------------------------------------
+        self.write_log("🔄 جاري الحصول على الـ Seamless Token...")
+
+        url_seamless = "http://mobile.vodafone.com.eg/checkSeamless/realms/vf-realm/protocol/openid-connect/auth?client_id=ana-vodafone-app-seamless"
+        headers_seamless = {
+            'User-Agent': "okhttp/4.11.0",
+            'Connection': "Keep-Alive",
+            'Accept-Encoding': "gzip",
+            'x-dynatrace': "MT_3_5_2386790616_1-0_a556db1b-4506-43f3-854a-1d2527767923_0_21317_157",
+            'x-agent-operatingsystem': "13",
+            'clientId': "AnaVodafoneAndroid",
+            'Accept-Language': "ar",
+            'x-agent-device': "OPPO CPH2235",
+            'x-agent-version': "2024.7.2.1",
+            'x-agent-build': "1050",
+            'digitalId': "24S0M31T0I9RK",
+        }
+
+        try:
+            response_seamless = requests.get(
+                url_seamless, headers=headers_seamless
+            )
+            seamless_data = response_seamless.json()
+            seamless_token = seamless_data.get('seamlessToken')
+            sender_msisdn = seamless_data.get('msisdn')
+
+            if seamless_token:
+                self.write_log("✅ تم تسجيل الدخول بنجاح إلى الكاش.")
+            else:
+                self.write_log("❌ فشل الحصول على Seamless Token.")
+                return
+
+            # الحصول على access token
+            self.write_log("🔄 جاري طلب الـ Access Token...")
+            url_token = "https://mobile.vodafone.com.eg/auth/realms/vf-realm/protocol/openid-connect/token"
+            payload_token = {
+                'grant_type': "password",
+                'client_secret': "b86e30a8-ae29-467a-a71f-65c73f2ff5e3",
+                'client_id': "cash-app",
+            }
+            headers_token = {
+                'User-Agent': "okhttp/4.11.0",
+                'Accept': "application/json, text/plain, */*",
+                'Accept-Encoding': "gzip",
+                'silentLogin': "true",
+                'seamlessToken': seamless_token,
+                'firstTimeLogin': "true",
+                'x-dynatrace': "MT_3_5_2386790616_1-0_a556db1b-4506-43f3-854a-1d2527767923_0_21520_165",
+                'x-agent-operatingsystem': "13",
+                'clientId': "AnaVodafoneAndroid",
+                'Accept-Language': "ar",
+                'x-agent-device': "OPPO CPH2235",
+                'x-agent-version': "2024.7.2.1",
+                'x-agent-build': "1050",
+                'digitalId': "24S0M31T0I9RK",
+            }
+
+            response_token = requests.post(
+                url_token, data=payload_token, headers=headers_token
+            )
+            access_token = response_token.json()['access_token']
+
+            # تنفيذ طلب الشحن
+            self.write_log("🔄 جاري تنفيذ أمر شحن الكارت الآن...")
+            url_order = "https://mobile.vodafone.com.eg/services/dxl/pom/productOrder"
+
+            payload_order = {
+                "channel": {"name": "MobileApp"},
+                "orderItem": [
                     {
-                        "name": "PaymentMethod",
-                        "value": "VFCash"
-                    },
-                    {
-                        "name": "USE_EMONEY",
-                        "value": "False"
-                    },
-                    {
-                        "name": "MerchantCode",
-                        "value": ""
+                        "action": "insert",
+                        "id": product_id,
+                        "product": {
+                            "characteristic": [
+                                {"name": "PaymentMethod", "value": "VFCash"},
+                                {"name": "USE_EMONEY", "value": "False"},
+                                {"name": "MerchantCode", "value": ""},
+                            ],
+                            "id": product_id,
+                            "relatedParty": [
+                                {
+                                    "id": sender_msisdn,
+                                    "name": "MSISDN",
+                                    "role": "Subscriber",
+                                },
+                                {
+                                    "id": receiver,
+                                    "name": "Receiver",
+                                    "role": "Receiver",
+                                },
+                            ],
+                        },
+                        "@type": product_id,
+                        "eCode": 0,
                     }
                 ],
-                "id": product_id,
                 "relatedParty": [
-                    {
-                        "id": sender_msisdn,
-                        "name": "MSISDN",
-                        "role": "Subscriber"
-                    },
-                    {
-                        "id": receiver,
-                        "name": "Receiver",
-                        "role": "Receiver"
-                    }
-                ]
-            },
-            "@type": product_id,
-            "eCode": 0
-        }
-    ],
-    "relatedParty": [
-        {
-            "id": pin,
-            "name": "pin",
-            "role": "Requestor"
-        }
-    ],
-    "@type": "CashFakkaAndMared"
-}
+                    {"id": pin, "name": "pin", "role": "Requestor"}
+                ],
+                "@type": "CashFakkaAndMared",
+            }
 
-headers_order = {
-    'User-Agent': "okhttp/4.11.0",
-    'Connection': "Keep-Alive",
-    'Accept': "application/json",
-    'Accept-Encoding': "gzip",
-    'Content-Type': "application/json",
-    'api-host': "ProductOrderingManagement",
-    'useCase': "CashFakkaAndMared",
-    'x-dynatrace': "MT_3_5_2386790616_1-0_a556db1b-4506-43f3-854a-1d2527767923_0_2_160",
-    'api-version': "v2",
-    'msisdn': f'0{sender_msisdn}' if sender_msisdn and not str(sender_msisdn).startswith('0') else sender_msisdn,
-    'Authorization': f"Bearer {access_token}",
-    'Accept-Language': "ar",
-    'x-agent-operatingsystem': "13",
-    'clientId': "AnaVodafoneAndroid",
-    'x-agent-device': "OPPO CPH2235",
-    'x-agent-version': "2024.7.2.1",
-    'x-agent-build': "1050",
-    'digitalId': "24S0M31T0I9RK"
-}
+            headers_order = {
+                'User-Agent': "okhttp/4.11.0",
+                'Connection': "Keep-Alive",
+                'Accept': "application/json",
+                'Accept-Encoding': "gzip",
+                'Content-Type': "application/json",
+                'api-host': "ProductOrderingManagement",
+                'useCase': "CashFakkaAndMared",
+                'x-dynatrace': "MT_3_5_2386790616_1-0_a556db1b-4506-43f3-854a-1d2527767923_0_2_160",
+                'api-version': "v2",
+                'msisdn': (
+                    f'0{sender_msisdn}'
+                    if sender_msisdn and not str(sender_msisdn).startswith('0')
+                    else sender_msisdn
+                ),
+                'Authorization': f"Bearer {access_token}",
+                'Accept-Language': "ar",
+                'x-agent-operatingsystem': "13",
+                'clientId': "AnaVodafoneAndroid",
+                'x-agent-device': "OPPO CPH2235",
+                'x-agent-version': "2024.7.2.1",
+                'x-agent-build': "1050",
+                'digitalId': "24S0M31T0I9RK",
+            }
 
-response_order = requests.post(url_order, data=json.dumps(payload_order), headers=headers_order)
+            response_order = requests.post(
+                url_order,
+                data=json.dumps(payload_order),
+                headers=headers_order,
+            )
 
-try:
-    result = response_order.json()
-    if result.get('state') == 'Completed' or result.get('complete'):
-        print('✅ تم الشحن بنجاح!')
-    else:
-        print('❌ فشل: رصيدك غير كافي أو خطأ آخر')
-        print(f'الرد: {result}')
-except:
-    print(f'❌ خطأ: {response_order.text}')
+            result = response_order.json()
+            if result.get('state') == 'Completed' or result.get('complete'):
+                self.write_log("🎉 ✅ تم الشحن بنجاح واكتملت العملية!")
+            else:
+                self.write_log("❌ فشل: رصيدك غير كافي أو هناك خطأ في المحفظة.")
+                self.write_log(f"الرد من فودافون: {result}")
+
+        except Exception as e:
+            self.write_log(f"❌ حدث خطأ غير متوقع أثناء الاتصال:\n{str(e)}")
+
+
+if __name__ == '__main__':
+    VodafoneCashApp().run()
