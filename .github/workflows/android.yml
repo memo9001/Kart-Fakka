@@ -16,7 +16,7 @@ jobs:
       uses: subincm/buildozer-action@v2
       with:
         workdir: .
-        buildozer_version: stable
+        buildozer_version: master
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
