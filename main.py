@@ -87,9 +87,9 @@ font_size=16,
             font_size=16,
         )
         self.main_layout.add_widget(self.card_spinner)
-         self.card_spinner.option_cls.font_name = "Arabic"
+        self.card_spinner.option_cls.font_name = "Arabic"
 
-        # 2. خانة إدخال رقم المستلم
+        #self.pin_input = TextInput( 2. خانة إدخال رقم المستلم
         self.receiver_input = TextInput(
             hint_text="📱 ادخل الرقم اللي عايز تشحن له (11 رقم)",
             foreground_color=(1,1,1,1),
