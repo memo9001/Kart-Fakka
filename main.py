@@ -121,7 +121,7 @@ cursor_color=(0.89,0.04,0.16,1),
             font_name="Arabic",
             size_hint_y=None,
             height=55,
-            background_color=(0.89, 0.04, 0.16, 1)
+            background_color=(0.89, 0.04, 0.16, 1),
             font_size=18,
         )
         self.btn_submit.bind(on_press=self.start_thread)
@@ -146,10 +146,10 @@ cursor_color=(0.89,0.04,0.16,1),
         return self.main_layout
 
     def write_log(self, text):
-    # تحديث النص في واجهة التطبيق
-    self.log_label.markup = True
-    self.log_label.text += f"[font=Arabic]{text}[/font]\n"
-
+        # تحديث النص في واجهة التطبيق
+        self.log_label.markup = True
+        self.log_label.text += f"[font=Arabic]{text}[/font]\n"
+        
     def start_thread(self, instance):
         # تشغيل الكود في الخلفية لكي لا يتوقف التطبيق عن الاستجابة أثناء طلبات الويب
         threading.Thread(target=self.process_billing).start()
