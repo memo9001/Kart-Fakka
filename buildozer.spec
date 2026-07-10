@@ -10,7 +10,7 @@ source.include_exts = py,png,jpg,jpeg,kv,atlas,json,ttf
 
 version = 1.0
 
-requirements = python3,kivy,requests
+requirements = python3,kivy,requests,arabic-reshaper,python-bidi
 
 orientation = portrait
 fullscreen = 1
