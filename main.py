@@ -10,11 +10,10 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.spinner import Spinner
 from kivy.core.text import LabelBase
 from kivy.core.window import Window
-
- LabelBase.register(
-     name="Arabic",
-     fn_regular="Cairo.ttf"
- )
+LabelBase.register(
+    name="Arabic",
+    fn_regular="Cairo.ttf"
+)
 
 Window.clearcolor = (0.08, 0.08, 0.10, 1)
 
