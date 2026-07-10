@@ -10,10 +10,15 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.spinner import Spinner
 from kivy.core.text import LabelBase
 from kivy.core.window import Window
+import arabic_reshaper
+from bidi.algorithm import get_display
 LabelBase.register(
     name="Arabic",
     fn_regular="Cairo.ttf"
 )
+
+def ar(text):
+    return get_display(arabic_reshaper.reshape(text))
 
 Window.clearcolor = (0.08, 0.08, 0.10, 1)
 
@@ -50,7 +55,7 @@ MARED_PRODUCTS = [
 ]
 
 ALL_PRODUCTS = FAKKA_PRODUCTS + MARED_PRODUCTS
-PRODUCT_NAMES = [item[0] for item in ALL_PRODUCTS]
+PRODUCT_NAMES = [ar(item[0]) for item in ALL_PRODUCTS]
 
 
 class VodafoneCashApp(App):
@@ -64,7 +69,7 @@ class VodafoneCashApp(App):
         # 1. القائمة المنسدلة لاختيار نوع الكارت
         self.main_layout.add_widget(
             Label(
-    text="اختر نوع الكارت المعين:",
+    text=ar("اختر نوع الكارت المعين:"),
     font_name="Arabic",
 color=(1,1,1,1),
 font_size=16,
@@ -73,15 +78,16 @@ font_size=16,
             )
         )
         self.card_spinner = Spinner(
-            text="اضغط هنا لاختيار الكارت",
+            text=ar("اضغط هنا لاختيار الكارت"),
             font_name="Arabic",
+            option_cls=Spinner.option_cls,
             values=PRODUCT_NAMES,
             size_hint_y=None,
             height=50,
             font_size=16,
         )
         self.main_layout.add_widget(self.card_spinner)
-        # self.card_spinner.option_cls.font_name = "Arabic"
+         self.card_spinner.option_cls.font_name = "Arabic"
 
         # 2. خانة إدخال رقم المستلم
         self.receiver_input = TextInput(
