@@ -6,7 +6,7 @@ package.name = vfcashfakka
 package.domain = org.memo9001
 
 source.dir = .
-source.include_exts = py,png,jpg,jpeg,kv,atlas,json
+source.include_exts = py,png,jpg,jpeg,kv,atlas,json,ttf
 
 version = 1.0
 
