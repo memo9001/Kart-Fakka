@@ -82,7 +82,7 @@ font_size=16,
             font_size=16,
         )
         self.main_layout.add_widget(self.card_spinner)
-        self.card_spinner.option_cls.font_name = "Arabic"
+        # self.card_spinner.option_cls.font_name = "Arabic"
 
         # 2. خانة إدخال رقم المستلم
         self.receiver_input = TextInput(
