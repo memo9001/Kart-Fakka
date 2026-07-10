@@ -11,10 +11,10 @@ from kivy.uix.spinner import Spinner
 from kivy.core.text import LabelBase
 from kivy.core.window import Window
 
-LabelBase.register(
-    name="Arabic",
-    fn_regular="Cairo.ttf"
-)
+# LabelBase.register(
+#     name="Arabic",
+#     fn_regular="Cairo.ttf"
+# )
 
 Window.clearcolor = (0.08, 0.08, 0.10, 1)
 
@@ -66,7 +66,7 @@ class VodafoneCashApp(App):
         self.main_layout.add_widget(
             Label(
     text="اختر نوع الكارت المعين:",
-    font_name="Arabic",
+    #font_name="Arabic",
 color=(1,1,1,1),
 font_size=16,
                 size_hint_y=None,
@@ -75,7 +75,7 @@ font_size=16,
         )
         self.card_spinner = Spinner(
             text="اضغط هنا لاختيار الكارت",
-            font_name="Arabic",
+            #font_name="Arabic",
             values=PRODUCT_NAMES,
             size_hint_y=None,
             height=50,
@@ -90,7 +90,7 @@ font_size=16,
             foreground_color=(1,1,1,1),
 background_color=(0.13,0.13,0.13,1),
 cursor_color=(0.89,0.04,0.16,1),
-            font_name="Arabic",
+            #font_name="Arabic",
             multiline=False,
             size_hint_y=None,
             height=50,
@@ -105,7 +105,7 @@ cursor_color=(0.89,0.04,0.16,1),
             foreground_color=(1,1,1,1),
 background_color=(0.13,0.13,0.13,1),
 cursor_color=(0.89,0.04,0.16,1),
-            font_name="Arabic",
+            #font_name="Arabic",
             multiline=False,
             password=True,  # يخفي الباسورد على شكل نجوم للأمان
             size_hint_y=None,
@@ -118,7 +118,7 @@ cursor_color=(0.89,0.04,0.16,1),
         # 4. زر تشغيل العملية
         self.btn_submit = Button(
             text="🚀 بدء عملية الشحن التلقائي",
-            font_name="Arabic",
+            #font_name="Arabic",
             size_hint_y=None,
             height=55,
             background_color=(0.89, 0.04, 0.16, 1),
@@ -131,7 +131,7 @@ cursor_color=(0.89,0.04,0.16,1),
         scroll = ScrollView()
         self.log_label = Label(
             text="حالة العمليات ستظهر هنا خطوة بخطوة...\n",
-            font_name="Arabic",
+            #font_name="Arabic",
             color=(1,1,1,1),
             markup=True,
             size_hint_y=None,
@@ -147,8 +147,7 @@ cursor_color=(0.89,0.04,0.16,1),
 
     def write_log(self, text):
         # تحديث النص في واجهة التطبيق
-        self.log_label.markup = True
-        self.log_label.text += f"[font=Arabic]{text}[/font]\n"
+        self.log_label.text += f"{text}\n"
         
     def start_thread(self, instance):
         # تشغيل الكود في الخلفية لكي لا يتوقف التطبيق عن الاستجابة أثناء طلبات الويب
